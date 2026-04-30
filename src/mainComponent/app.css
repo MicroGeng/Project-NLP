@@ -39,8 +39,8 @@ body {
 
 /* Textarea */
 textarea {
-    width: 95%;
-    height: 120px;
+    width: 100%;
+    height: 125px;
     padding: 10px;
     border-radius: 10px;
     border: 1px solid #ccc;
@@ -49,6 +49,7 @@ textarea {
     font-size: 14px;
     justify-content: center;
     align-items: center;
+    margin-right: 2px;
 }
 
 /* Button */
