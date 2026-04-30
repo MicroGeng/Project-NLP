@@ -66,7 +66,7 @@ function Home() {
 
         {result && !loading && (
             <div className={getResultClass()}>
-                {result === "Positive" && "😊 Positive"}
+                {result === "Positive" && "😆 Positive"}
                 {result === "Negative" && "😡 Negative"}
                 {result === "Neutral" && "😐 Neutral"}
             </div>
