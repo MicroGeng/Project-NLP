@@ -8,6 +8,12 @@ function Home() {
     const [result, setResult] = useState<SentimentType>("");
     const [loading, setLoading] = useState<boolean>(false);
 
+    const [scores, setScores] = useState({
+        positive: 0,
+        neutral: 0,
+        negative: 0,
+    });
+
     const analyzeSentiment = () => {
     if (!text.trim()) return;
 
@@ -22,18 +28,38 @@ function Home() {
         lowerText.includes("Happy")
     ) {
         setResult("Positive");
+
+        setScores({
+            positive: 85,
+            neutral: 10,
+            negative: 5,
+        });
+
     } else if (
         lowerText.includes("Bad") ||
         lowerText.includes("Ugly") ||
         lowerText.includes("Angry")
     ) {
         setResult("Negative");
+
+        setScores({
+            positive: 5,
+            neutral: 15,
+            negative: 80,
+        });
+
     } else {
         setResult("Neutral");
+
+        setScores({
+            positive: 20,
+            neutral: 65,
+            negative: 15,
+        });
     }
 
         setLoading(false);
-    }, 800); // simulasi loading
+    }, 800); 
     };
 
     const getResultClass = () => {
@@ -71,7 +97,28 @@ function Home() {
                 {result === "Neutral" && "😐 Neutral"}
             </div>
         )}
+
+        {result && !loading && (
+            <div className="score-box">
+                <h3>Prediction Score</h3>
+
+            <div className="score-item">
+                <span>Positive</span>
+                <span>{scores.positive}%</span>
+            </div>
+
+            <div className="score-item">
+                <span>Neutral</span>
+                <span>{scores.neutral}%</span>
+            </div>
+
+            <div className="score-item">
+                <span>Negative</span>
+                <span>{scores.negative}%</span>
+            </div>
         </div>
+)}
+        </div> 
     </div>
     );
 }

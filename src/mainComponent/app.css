@@ -1,5 +1,11 @@
 /* Reset Dasar */
 
+html, body, #root {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+
 * {
     box-sizing: border-box;
 }
@@ -100,3 +106,27 @@ button:hover {
     background: #e5e7eb;
     color: #374151;
 }   
+
+/* Score Box */
+.score-box {
+    margin-top: 20px;
+    background: #e5e7eb;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: left;
+}
+
+.score-box h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    text-align: center;
+    color: #111827;
+}
+
+.score-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 16px;
+    font-weight: 500;
+}
