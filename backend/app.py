@@ -3,45 +3,52 @@ from flask_cors import CORS
 import torch
 import torch.nn.functional as F
 import pickle
- 
+import io
+
 app = Flask(__name__)
-CORS(app)  # biar frontend React bisa hit backend ini
- 
+CORS(app)
+
 # ============================================================
-# LOAD MODEL (dijalankan sekali waktu server start)
+# LOAD MODEL
 # ============================================================
-MODEL_PATH = "./model/model.pkl"
- 
+MODEL_DIR = "./model"
+
+# Custom unpickler untuk handle model yang di-train di GPU
+# tapi dijalankan di CPU
+class CPUUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        if module == 'torch.storage' and name == '_load_from_bytes':
+            return lambda b: torch.load(io.BytesIO(b), map_location='cpu', weights_only=False)
+        return super().find_class(module, name)
+
 print("Loading model...")
-with open(MODEL_PATH, "rb") as f:
-    bundle = pickle.load(f)
- 
-model = bundle["model"]
-tokenizer = bundle["tokenizer"]
-model.eval()  # set ke inference mode
+with open(f"{MODEL_DIR}/indobert_model.pkl", "rb") as f:
+    model = CPUUnpickler(f).load()
+
+with open(f"{MODEL_DIR}/indobert_tokenizer.pkl", "rb") as f:
+    tokenizer = pickle.load(f)
+
+with open(f"{MODEL_DIR}/indobert_label_encoder.pkl", "rb") as f:
+    label_encoder = pickle.load(f)
+
+model.eval()
 print("Model loaded!")
- 
-# Urutan label sesuai waktu training
-# 0 = negative, 1 = neutral, 2 = positive (cek config.json kalau ragu)
-LABEL_MAP = {0: "negative", 1: "neutral", 2: "positive"}
- 
- 
+
+
 # ============================================================
 # ENDPOINT: POST /predict
 # ============================================================
 @app.route("/predict", methods=["POST"])
 def predict():
     data = request.get_json()
- 
-    # Validasi input
+
     if not data or "text" not in data:
         return jsonify({"error": "Field 'text' wajib diisi"}), 400
- 
+
     text = data["text"].strip()
     if not text:
         return jsonify({"error": "Text tidak boleh kosong"}), 400
- 
-    # Tokenize
+
     inputs = tokenizer(
         text,
         return_tensors="pt",
@@ -49,36 +56,36 @@ def predict():
         truncation=True,
         padding="max_length"
     )
- 
-    # Inferensi
+
     with torch.no_grad():
         outputs = model(**inputs)
         logits = outputs.logits
- 
-    # Hitung probabilitas tiap kelas
+
     probs = F.softmax(logits, dim=1).squeeze().tolist()
- 
-    # Ambil label dengan prob tertinggi
+
     pred_idx = torch.argmax(logits, dim=1).item()
-    pred_label = LABEL_MAP[pred_idx]
- 
+    pred_label = label_encoder.inverse_transform([pred_idx])[0]
+
+    classes = label_encoder.classes_.tolist()
+    scores = {cls: round(probs[i] * 100, 1) for i, cls in enumerate(classes)}
+
     return jsonify({
         "label": pred_label,
         "scores": {
-            "negative": round(probs[0] * 100, 1),
-            "neutral":  round(probs[1] * 100, 1),
-            "positive": round(probs[2] * 100, 1),
+            "positive": scores.get("positive", 0),
+            "neutral":  scores.get("neutral", 0),
+            "negative": scores.get("negative", 0),
         }
     })
- 
- 
+
+
 # ============================================================
-# ENDPOINT: GET /health  (opsional, buat cek server hidup)
+# ENDPOINT: GET /health
 # ============================================================
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"})
- 
- 
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
